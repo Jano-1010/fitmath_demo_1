@@ -10,6 +10,7 @@ game_state = "question"
 def setup():
     size(600, 400)  # Fenstergröße festlegen
     textSize(20)    # Textgröße setzen
+    size(650, 500)  # Fenstergrösse festlegen
     generate_question()
 
 def draw():
