@@ -8,9 +8,8 @@ feedback = ""
 game_state = "question"
 
 def setup():
-    size(600, 400)  # Fenstergröße festlegen
-    textSize(20)    # Textgröße setzen
     size(650, 500)  # Fenstergrösse festlegen
+    textSize(20)    # Textgrösse setzen
     generate_question()
 
 def draw():
@@ -21,6 +20,8 @@ def draw():
         display_question()
     elif game_state == "feedback":
         display_feedback()
+    elif game_state == "end":
+        diplay_end_screen()
 
 def generate_question():
     global current_question, correct_answer, user_answer
