@@ -37,7 +37,7 @@ body {
 }
 
 main { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; padding-top: calc(16px + env(safe-area-inset-top)); }
-h1 { font-size: 1.6rem; margin: 0 0 4px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; padding-right: 56px; }
 h2 { font-size: 1.1rem; margin: 20px 0 8px; }
 h3 { font-size: 1rem; margin: 0; }
 h4 { margin: 8px 0 4px; font-size: .9rem; color: var(--muted); }
@@ -125,6 +125,11 @@ input.num.invalid { border-color: var(--danger); }
 .hist-block p { margin: 6px 0; font-size: .95rem; }
 
 /* Navigation and toast */
+.home-btn {
+  position: fixed; z-index: 10; top: calc(8px + env(safe-area-inset-top)); right: 8px;
+  width: var(--tap); height: var(--tap); display: grid; place-items: center;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--border); border-radius: 50%;
+}
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);

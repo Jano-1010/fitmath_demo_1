@@ -68,6 +68,15 @@ async function start() {
     ...TABS.map((t) => h("button", { type: "button", "data-tab": t.id, onclick: () => ctx.navigate(t.id) }, t.label)),
   );
 
+  const homeBtn = h("button", {
+    type: "button",
+    class: "home-btn",
+    "aria-label": "Startseite",
+    onclick: () => ctx.navigate("training"),
+    innerHTML:
+      '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-6h4v6"/></svg>',
+  });
+
   function render() {
     clear(view);
     nav.querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.tab === tab)));
@@ -83,7 +92,7 @@ async function start() {
 
   window.addEventListener("pagehide", () => persistDraft.flush());
 
-  root.append(view, toastEl, nav);
+  root.append(homeBtn, view, toastEl, nav);
   render();
   registerSW({ immediate: true });
 }
