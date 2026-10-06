@@ -49,7 +49,7 @@ export function renderHome(ctx: AppContext): HTMLElement {
   return h(
     "section",
     { class: "view" },
-    h("h1", {}, "Training"),
+    h("h1", {}, ctx.state.profile.name ? `Hallo ${ctx.state.profile.name}` : "Training"),
     sessions.length === 0
       ? h(
           "div",

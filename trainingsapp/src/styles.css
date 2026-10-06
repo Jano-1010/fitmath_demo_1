@@ -33,11 +33,10 @@
 html, body { margin: 0; background: var(--bg); color: var(--text); }
 body {
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  padding-bottom: calc(var(--tap) + 24px + env(safe-area-inset-bottom));
 }
 
-main { max-width: 640px; margin: 0 auto; padding: 16px 16px 24px; padding-top: calc(16px + env(safe-area-inset-top)); }
-h1 { font-size: 1.6rem; margin: 0 0 4px; padding-right: 56px; }
+main { max-width: 640px; margin: 0 auto; padding: 16px 16px 32px; padding-top: calc(var(--tap) + 20px + env(safe-area-inset-top)); }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
 h2 { font-size: 1.1rem; margin: 20px 0 8px; }
 h3 { font-size: 1rem; margin: 0; }
 h4 { margin: 8px 0 4px; font-size: .9rem; color: var(--muted); }
@@ -68,7 +67,7 @@ button.link { background: none; border: 0; padding: 0 12px; color: var(--muted);
 button.link.danger { color: var(--danger); margin-top: 8px; }
 .card button + button, .card .primary + .secondary { margin-left: 8px; margin-top: 8px; }
 
-.sticky-cta { position: sticky; bottom: calc(var(--tap) + 8px + env(safe-area-inset-bottom)); }
+.sticky-cta { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); }
 
 /* Selection chips */
 .group { border: 0; padding: 0; margin: 16px 0 0; }
@@ -124,20 +123,43 @@ input.num.invalid { border-color: var(--danger); }
 .s-meta { color: var(--muted); font-size: .9rem; }
 .hist-block p { margin: 6px 0; font-size: .95rem; }
 
-/* Navigation and toast */
-.home-btn {
-  position: fixed; z-index: 10; top: calc(8px + env(safe-area-inset-top)); right: 8px;
-  width: var(--tap); height: var(--tap); display: grid; place-items: center;
-  background: var(--surface); color: var(--accent); border: 1px solid var(--border); border-radius: 50%;
+/* Kopfleiste */
+.topbar {
+  position: fixed; z-index: 10; top: 0; left: 0; right: 0;
+  display: grid; grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap); align-items: center; gap: 2px;
+  padding: calc(6px + env(safe-area-inset-top)) 8px 6px; background: var(--bg); border-bottom: 1px solid var(--border);
 }
-.tabs {
-  position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--surface); border-top: 1px solid var(--border);
-  padding-bottom: env(safe-area-inset-bottom);
+.bar-btn {
+  width: var(--tap); height: var(--tap); display: grid; place-items: center; background: none; border: 0; border-radius: 50%;
+  color: var(--accent);
 }
-.tabs button { flex: 1; background: none; border: 0; font-weight: 600; color: var(--muted); }
-.tabs button[aria-current="true"] { color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.tabs { display: flex; justify-content: center; gap: 2px; }
+.tabs button {
+  min-height: var(--tap); padding: 0 6px; background: none; border: 0; border-bottom: 3px solid transparent;
+  font-weight: 600; font-size: .9rem; color: var(--muted);
+}
+.tabs button[aria-current="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.menu {
+  position: absolute; top: 100%; left: 8px; min-width: 200px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+}
+.menu[hidden] { display: none; }
+.menu button { display: block; width: 100%; min-height: var(--tap); text-align: left; padding: 0 12px; background: none; border: 0; border-radius: 8px; font-weight: 600; }
+.menu button:active { background: var(--surface-2); }
+
+/* Kraftwerte */
+.strength-list { margin-top: 8px; }
+.strength-row h3 { margin-bottom: 4px; }
+.strength-main { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.strength-now { font-size: 1.5rem; font-weight: 800; }
+.delta { font-weight: 700; }
+.delta.up { color: var(--ok); }
+.delta.down { color: var(--danger); }
+
+/* Toast */
+
 .toast {
-  position: fixed; left: 16px; right: 16px; bottom: calc(var(--tap) + 16px + env(safe-area-inset-bottom));
+  position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 20;
   max-width: 608px; margin: 0 auto; background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
@@ -188,3 +210,17 @@ button.tile { cursor: pointer; }
 .focus-count { text-align: right; font-weight: 700; }
 .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; }
 .filter-bar .secondary { flex: none; margin: 0 !important; }
+
+/* Login */
+.text-input {
+  width: 100%; min-height: var(--tap); padding: 0 12px; margin: 6px 0; background: var(--bg); color: var(--text);
+  border: 2px solid var(--border); border-radius: 10px; font-size: 1rem;
+}
+.form-msg { color: var(--danger); font-weight: 600; min-height: 1.2em; }
+.lock {
+  position: fixed; inset: 0; z-index: 100; background: var(--bg); padding: 20vh 24px 24px; max-width: 480px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.lock-input { width: 100%; letter-spacing: .4em; }
+.lock-msg { color: var(--danger); font-weight: 600; min-height: 1.2em; margin: 0; }
+.card .primary { margin-top: 8px; }
