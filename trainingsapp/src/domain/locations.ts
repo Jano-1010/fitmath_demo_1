@@ -10,17 +10,17 @@ export interface LocationDef {
 export const LOCATIONS: LocationDef[] = [
   {
     id: "gym_full",
-    label: "Gym voll",
+    label: "Gym",
     equipment: ["barbell", "dumbbell", "cable", "rower", "skierg", "kettlebell", "machine", "box"],
   },
   {
     id: "school_gym",
-    label: "Schul-Gym",
+    label: "Schulgym",
     equipment: ["barbell", "dumbbell", "cable", "pullupbar", "bench", "mats"],
   },
   {
     id: "minimal",
-    label: "Minimal",
+    label: "Homegym",
     equipment: ["wallbars", "medball", "pullupbar"],
   },
 ];
