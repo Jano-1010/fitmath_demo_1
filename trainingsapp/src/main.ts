@@ -11,6 +11,9 @@ import { renderHistory } from "./ui/history";
 import { renderHome } from "./ui/home";
 import { renderSession } from "./ui/session";
 import { renderStrength } from "./ui/strength";
+import { renderLogin } from "./ui/login";
+import { showLock } from "./ui/lock";
+import type { Profile } from "./domain/auth";
 
 const DEFAULT_PREFS: Prefs = { location: "gym_full", focus: "full", budgetMin: 60 };
 const TABS: { id: Tab; label: string }[] = [
@@ -29,7 +32,9 @@ async function start() {
     index: await storage.getIndex(),
     prefs: { ...DEFAULT_PREFS, ...(await storage.getMeta<Prefs>("prefs")) },
     draft: (await storage.getMeta<Draft>("draft")) ?? null,
+    profile: (await storage.getMeta<Profile>("profile")) ?? { name: "" },
   };
+  if (state.profile.pin) await showLock(root, state.profile.pin, state.profile.name);
 
   let tab: Tab = "training";
   let openId: string | undefined;
@@ -82,6 +87,7 @@ async function start() {
     "div",
     { class: "menu", id: "main-menu", hidden: true },
     h("button", { type: "button", onclick: () => ctx.navigate("data") }, "Daten"),
+    h("button", { type: "button", onclick: () => ctx.navigate("login") }, "Login"),
   );
   const menuBtn = h("button", {
     type: "button",
@@ -118,6 +124,7 @@ async function start() {
     if (tab === "training") view.append(state.draft ? renderSession(ctx, state.draft) : renderHome(ctx));
     else if (tab === "history") view.append(renderHistory(ctx, openId));
     else if (tab === "stats") view.append(renderStrength(ctx));
+    else if (tab === "login") view.append(renderLogin(ctx));
     else view.append(renderData(ctx));
     window.scrollTo(0, 0);
   }

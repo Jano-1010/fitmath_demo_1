@@ -1,14 +1,16 @@
 import type { Prefs, Storage } from "../db/storage";
+import type { Profile } from "../domain/auth";
 import type { Draft } from "../domain/draft";
 import type { ExerciseIndex, Session } from "../domain/types";
 
-export type Tab = "training" | "history" | "stats" | "data";
+export type Tab = "training" | "history" | "stats" | "data" | "login";
 
 export interface AppState {
   sessions: Session[];
   index: ExerciseIndex;
   prefs: Prefs;
   draft: Draft | null;
+  profile: Profile;
 }
 
 export interface AppContext {

@@ -210,3 +210,17 @@ button.tile { cursor: pointer; }
 .focus-count { text-align: right; font-weight: 700; }
 .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; }
 .filter-bar .secondary { flex: none; margin: 0 !important; }
+
+/* Login */
+.text-input {
+  width: 100%; min-height: var(--tap); padding: 0 12px; margin: 6px 0; background: var(--bg); color: var(--text);
+  border: 2px solid var(--border); border-radius: 10px; font-size: 1rem;
+}
+.form-msg { color: var(--danger); font-weight: 600; min-height: 1.2em; }
+.lock {
+  position: fixed; inset: 0; z-index: 100; background: var(--bg); padding: 20vh 24px 24px; max-width: 480px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.lock-input { width: 100%; letter-spacing: .4em; }
+.lock-msg { color: var(--danger); font-weight: 600; min-height: 1.2em; margin: 0; }
+.card .primary { margin-top: 8px; }
