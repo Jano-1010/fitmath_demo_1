@@ -2,7 +2,7 @@ import type { Prefs, Storage } from "../db/storage";
 import type { Draft } from "../domain/draft";
 import type { ExerciseIndex, Session } from "../domain/types";
 
-export type Tab = "training" | "history" | "data";
+export type Tab = "training" | "history" | "stats" | "data";
 
 export interface AppState {
   sessions: Session[];
