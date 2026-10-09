@@ -5,7 +5,7 @@ import { h } from "./dom";
 
 export function renderData(ctx: AppContext): HTMLElement {
   const exportJson = () => {
-    const backup = makeBackup(ctx.state.sessions, ctx.state.prefs);
+    const backup = makeBackup(ctx.state.sessions, ctx.state.prefs, ctx.state.week);
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = h("a", { href: url, download: `trainingsapp-backup-${localDate(new Date())}.json` });
@@ -27,6 +27,10 @@ export function renderData(ctx: AppContext): HTMLElement {
         const backup = parseBackup(await file.text());
         if (!confirm(`${backup.sessions.length} Einheiten importieren? Bestehende Einheiten mit gleicher ID werden überschrieben, alle anderen bleiben erhalten.`)) return;
         await ctx.storage.putSessions(backup.sessions);
+        if (backup.week) {
+          Object.assign(ctx.state.week, backup.week);
+          await ctx.saveWeek();
+        }
         await ctx.reloadSessions();
         ctx.toast(`${backup.sessions.length} Einheiten importiert.`);
         ctx.navigate("history");

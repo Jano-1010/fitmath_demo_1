@@ -1,4 +1,5 @@
 import type { Session } from "../domain/types";
+import type { WeekPlan } from "../domain/week";
 import type { Prefs } from "./storage";
 
 export const BACKUP_VERSION = 1;
@@ -8,15 +9,17 @@ export interface Backup {
   version: number;
   exportedAt: string;
   prefs?: Prefs;
+  week?: WeekPlan;
   sessions: Session[];
 }
 
-export function makeBackup(sessions: Session[], prefs: Prefs | undefined, now = new Date()): Backup {
+export function makeBackup(sessions: Session[], prefs: Prefs | undefined, week: WeekPlan | undefined, now = new Date()): Backup {
   return {
     app: "trainingsapp",
     version: BACKUP_VERSION,
     exportedAt: now.toISOString(),
     ...(prefs ? { prefs } : {}),
+    ...(week ? { week } : {}),
     sessions,
   };
 }

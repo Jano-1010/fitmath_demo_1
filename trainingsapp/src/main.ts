@@ -4,20 +4,21 @@ import { createIdbStorage } from "./db/idb";
 import type { Prefs } from "./db/storage";
 import { buildIndex } from "./domain/exercise-index";
 import type { Draft } from "./domain/draft";
+import type { WeekPlan } from "./domain/week";
 import { debounce, clear, h } from "./ui/dom";
 import type { AppContext, AppState, Tab } from "./ui/context";
 import { renderData } from "./ui/data";
 import { renderHistory } from "./ui/history";
-import { renderHome } from "./ui/home";
+import { renderWeek } from "./ui/week";
 import { renderSession } from "./ui/session";
 import { renderStrength } from "./ui/strength";
 import { renderLogin } from "./ui/login";
 import { showLock } from "./ui/lock";
 import type { Profile } from "./domain/auth";
 
-const DEFAULT_PREFS: Prefs = { location: "gym_full", focus: "full", budgetMin: 60 };
+const DEFAULT_PREFS: Prefs = { location: "gym_full", budgetMin: 60, sessionsPerWeek: 4 };
 const TABS: { id: Tab; label: string }[] = [
-  { id: "training", label: "Training" },
+  { id: "training", label: "Woche" },
   { id: "history", label: "Verlauf" },
   { id: "stats", label: "Statistik" },
 ];
@@ -32,6 +33,7 @@ async function start() {
     index: await storage.getIndex(),
     prefs: { ...DEFAULT_PREFS, ...(await storage.getMeta<Prefs>("prefs")) },
     draft: (await storage.getMeta<Draft>("draft")) ?? null,
+    week: (await storage.getMeta<WeekPlan>("weekplan")) ?? {},
     profile: (await storage.getMeta<Profile>("profile")) ?? { name: "" },
   };
   if (state.profile.pin) await showLock(root, state.profile.pin, state.profile.name);
@@ -61,6 +63,7 @@ async function start() {
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3500);
     },
+    saveWeek: () => storage.setMeta("weekplan", state.week),
     async reloadSessions() {
       state.sessions = await storage.getSessions();
       state.index = buildIndex(state.sessions);
@@ -121,7 +124,7 @@ async function start() {
     clear(view);
     setMenu(false);
     nav.querySelectorAll("button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.tab === tab)));
-    if (tab === "training") view.append(state.draft ? renderSession(ctx, state.draft) : renderHome(ctx));
+    if (tab === "training") view.append(state.draft ? renderSession(ctx, state.draft) : renderWeek(ctx));
     else if (tab === "history") view.append(renderHistory(ctx, openId));
     else if (tab === "stats") view.append(renderStrength(ctx));
     else if (tab === "login") view.append(renderLogin(ctx));

@@ -2,8 +2,11 @@ import type { ExerciseIndex, FocusId, LocationId, Session } from "../domain/type
 
 export interface Prefs {
   location: LocationId;
-  focus: FocusId;
   budgetMin: number;
+  /** Target number of sessions per week, used for the weekly suggestions. */
+  sessionsPerWeek: number;
+  /** Unused since the weekly plan; kept so old backups still load. */
+  focus?: FocusId;
 }
 
 /** Everything the UI needs from persistence. A cloud backend only has to implement this interface. */
