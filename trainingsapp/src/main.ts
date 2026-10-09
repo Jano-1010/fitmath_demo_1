@@ -9,7 +9,7 @@ import { debounce, clear, h } from "./ui/dom";
 import type { AppContext, AppState, Tab } from "./ui/context";
 import { renderData } from "./ui/data";
 import { renderHistory } from "./ui/history";
-import { renderWeek } from "./ui/week";
+import { renderWeek, resetWeekView } from "./ui/week";
 import { renderSession } from "./ui/session";
 import { renderStrength } from "./ui/strength";
 import { renderLogin } from "./ui/login";
@@ -110,7 +110,19 @@ async function start() {
     if (e.key === "Escape") setMenu(false);
   });
 
-  const topbar = h("header", { class: "topbar" }, menuBtn, h("div", { class: "app-title" }, APP_NAME), h("span"), menu);
+  const topbar = h("header", { class: "topbar" }, menuBtn, h(
+      "button",
+      {
+        type: "button",
+        class: "app-title",
+        "aria-label": `${APP_NAME}: zum heutigen Tag`,
+        onclick: () => {
+          resetWeekView();
+          ctx.navigate("training");
+        },
+      },
+      APP_NAME,
+    ), h("span"), menu);
 
   function render() {
     clear(view);

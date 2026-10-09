@@ -139,7 +139,7 @@ input.num.invalid { border-color: var(--danger); }
   display: grid; grid-template-columns: var(--bar) 1fr var(--bar); align-items: center;
   padding: env(safe-area-inset-top) 8px 0; background: var(--bg); border-bottom: 1px solid var(--border);
 }
-.app-title { text-align: center; font-weight: 700; font-size: 1rem; letter-spacing: .28em; text-transform: uppercase; padding-left: .28em; }
+.app-title { height: var(--bar); background: none; border: 0; color: var(--text); text-align: center; font-weight: 700; font-size: 1rem; letter-spacing: .28em; text-transform: uppercase; padding-left: .28em; }
 .bar-btn {
   width: var(--bar); height: var(--bar); display: grid; place-items: center; background: none; border: 0; border-radius: 50%;
   color: var(--text);
@@ -283,8 +283,10 @@ button.tile { cursor: pointer; }
 .wk-two { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
 .wk-actions { display: flex; flex-direction: column; gap: 8px; }
 .wk-btn { min-height: 48px; width: 100%; border-radius: 4px; background: transparent; border: 1px solid var(--border); color: var(--text); font-size: 14px; font-weight: 500; }
-.wk-btn.primary { border-color: var(--accent); color: var(--accent-text-strong); font-size: 16px; }
+.wk-btn.primary { background: transparent; margin-top: 0; padding: 0; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent-text-strong); font-size: 16px; }
 .wk-btn.ghost { border-color: transparent; color: var(--muted); width: auto; align-self: center; padding: 0 16px; }
 .wk-done-note { font-style: italic; font-size: 14px; color: var(--accent-text-soft); }
 .wk-warn { color: var(--danger); font-weight: 600; font-size: 14px; }
 .wk button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wk-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.wk-btn.danger { width: auto; padding: 0 16px; flex: none; color: var(--danger); border-color: var(--danger); }
