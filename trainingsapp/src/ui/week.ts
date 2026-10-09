@@ -2,6 +2,8 @@ import { createDraft } from "../domain/draft";
 import { fmtShortDate, localDate } from "../domain/format";
 import { BUDGETS, FOCI, LOCATIONS, focusLabel, locationLabel } from "../domain/locations";
 import { generatePlan } from "../domain/plan";
+import { isoWeek } from "../domain/stats";
+import type { LocationId } from "../domain/types";
 import {
   MAX_WEEK_SESSIONS,
   MIN_WEEK_SESSIONS,
@@ -14,40 +16,55 @@ import {
   weekDates,
   weekStart,
   weekSummary,
+  type DayEntry,
   type DayFocus,
 } from "../domain/week";
-import { isoWeek } from "../domain/stats";
 import type { AppContext } from "./context";
 import { clear, h } from "./dom";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAYS_FULL = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+const ABBR: Record<DayFocus, string> = { upper: "OK", lower: "UK", full: "GK", athx: "ATHX", endurance: "AUS", rest: "Ruhe" };
 const dayLabel = (f: DayFocus) => (f === "rest" ? "Ruhetag" : focusLabel(f));
+
+const ICON = (path: string, size = 20, stroke = 1.5) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+const CHEVRON_LEFT = '<path d="m15 18-6-6 6-6"></path>';
+const CHEVRON_RIGHT = '<path d="m9 18 6-6-6-6"></path>';
+const CHECK = '<path d="M20 6 9 17l-5-5"></path>';
 
 /** Remembered while the app is open. */
 const view: { start?: string; selected?: string } = {};
 
-function chips<T extends string | number>(
-  legend: string,
+function chipGroup<T extends string | number>(
+  label: string,
   options: { id: T; label: string }[],
-  selected: T,
+  selected: T | undefined,
   onSelect: (id: T) => void,
+  small = false,
 ): HTMLElement {
-  const buttons = options.map((o) =>
+  return h(
+    "div",
+    { class: "wk-group" },
+    h("div", { class: "wk-label" }, label),
     h(
-      "button",
-      {
-        type: "button",
-        class: "chip",
-        "aria-pressed": String(o.id === selected),
-        onclick: () => {
-          onSelect(o.id);
-          buttons.forEach((b, i) => b.setAttribute("aria-pressed", String(options[i].id === o.id)));
-        },
-      },
-      o.label,
+      "div",
+      { class: "wk-chips" },
+      ...options.map((o) =>
+        h(
+          "button",
+          { type: "button", class: `wk-chip${small ? " small" : ""}`, "aria-pressed": String(o.id === selected), onclick: () => onSelect(o.id) },
+          o.label,
+        ),
+      ),
     ),
   );
-  return h("fieldset", { class: "group" }, h("legend", {}, legend), h("div", { class: "chips" }, ...buttons));
+}
+
+function parseDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export function renderWeek(ctx: AppContext): HTMLElement {
@@ -55,37 +72,36 @@ export function renderWeek(ctx: AppContext): HTMLElement {
   const today = localDate(new Date());
   view.start ??= weekStart(today);
   view.selected ??= today;
-  const root = h("section", { class: "view" });
+  const root = h("section", { class: "view wk" });
 
-  const sessionsPerWeek = () => state.prefs.sessionsPerWeek;
+  const target = () => state.prefs.sessionsPerWeek;
   const focusOf = () => focusLookup(state.sessions, state.week);
-
   const savePrefs = () => ctx.storage.setMeta("prefs", state.prefs);
+  /** First day suggestions are made for: today inside the current week, else the week start. */
+  const suggestFrom = (start: string) => (start <= today && today < addDays(start, 7) ? today : start);
 
-  async function setEntry(date: string, focus: DayFocus | null, done = false) {
-    if (focus === null) delete state.week[date];
-    else state.week[date] = { focus, done };
+  async function patchEntry(date: string, patch: Partial<DayEntry> | null) {
+    if (patch === null) delete state.week[date];
+    else {
+      const base: DayEntry = state.week[date] ?? { focus: "rest", done: false };
+      state.week[date] = { ...base, ...patch };
+    }
     await ctx.saveWeek();
     draw();
   }
 
   async function planWeek() {
-    const from = view.start! < today && today < addDays(view.start!, 7) ? today : view.start!;
-    const result = suggestWeek(from, focusOf(), sessionsPerWeek());
-    let n = 0;
-    for (const [date, focus] of Object.entries(result)) {
-      state.week[date] = { focus, done: false };
-      n++;
-    }
+    const result = suggestWeek(suggestFrom(view.start!), focusOf(), target());
+    for (const [date, focus] of Object.entries(result)) state.week[date] = { focus, done: false };
     await ctx.saveWeek();
-    ctx.toast(n === 0 ? "Alle Tage sind schon belegt." : "Woche geplant. Tage antippen zum Ändern.");
+    ctx.toast(Object.keys(result).length === 0 ? "Alle Tage sind schon belegt." : "Woche geplant. Tage antippen zum Ändern.");
     draw();
   }
 
-  function start(date: string, focus: DayFocus) {
+  function startTraining(date: string, focus: DayFocus) {
     if (!isTraining(focus)) return;
-    const plan = generatePlan(state.prefs.location, focus, state.prefs.budgetMin);
-    void savePrefs();
+    const entry = state.week[date];
+    const plan = generatePlan(entry?.location ?? state.prefs.location, focus, entry?.budgetMin ?? state.prefs.budgetMin);
     if (plan.blocks.length === 0) {
       ctx.toast("Für diese Auswahl gibt es keinen passenden Plan. Anderen Ort oder mehr Zeit wählen.");
       return;
@@ -95,82 +111,95 @@ export function renderWeek(ctx: AppContext): HTMLElement {
     ctx.navigate("training");
   }
 
-  function dayPanel(date: string): HTMLElement {
+  function detail(date: string, suggestion: DayFocus | undefined): HTMLElement {
     const info = dayInfo(date, state.sessions, state.week);
-    const logged = state.sessions.some((s) => s.date === date);
-    const suggestion = suggestWeek(date, focusOf(), sessionsPerWeek())[date];
-    const past = date < today;
-    const panel = h("div", { class: "card day-panel" });
-
-    if (logged) {
-      panel.append(
-        h("p", {}, `Erledigt: ${dayLabel(info.focus!)}`),
-        h("button", { type: "button", class: "secondary", onclick: () => ctx.navigate("history") }, "Im Verlauf ansehen"),
-      );
-      return panel;
-    }
-
-    const options = [...FOCI.map((f) => ({ id: f.id as DayFocus, label: f.label })), { id: "rest" as DayFocus, label: "Ruhetag" }];
-    panel.append(
-      chips(past ? "Was hast du trainiert?" : "Training", options, info.focus ?? ("" as DayFocus), (f) => {
-        void setEntry(date, f, past && f !== "rest");
-      }),
+    const logged = state.sessions.filter((s) => s.date === date).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+    const entry = state.week[date];
+    const d = parseDate(date);
+    const sugg = info.focus === undefined && suggestion !== undefined ? suggestion : undefined;
+    const kicker =
+      date === today ? "Heute" : sugg ? `Vorschlag: ${dayLabel(sugg)}` : info.done ? "Erledigt" : WEEKDAYS_FULL[(d.getDay() + 6) % 7];
+    const el = h(
+      "div",
+      { class: "wk-detail" },
+      h(
+        "div",
+        {},
+        h("div", { class: "wk-kicker" }, kicker),
+        h("div", { class: "wk-title" }, `${WEEKDAYS_FULL[(d.getDay() + 6) % 7]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}`),
+      ),
     );
 
-    if (info.focus === undefined && suggestion && suggestion !== "rest") {
-      panel.append(
-        h("p", { class: "muted" }, `Vorschlag: ${dayLabel(suggestion)}`),
-        h("button", { type: "button", class: "secondary", onclick: () => void setEntry(date, suggestion) }, "Vorschlag übernehmen"),
+    if (logged) {
+      el.append(
+        h("div", { class: "wk-done-note" }, `Erledigt · ${dayLabel(logged.focus)} · ${logged.durationMin} min im ${locationLabel(logged.location)}`),
+        h("div", { class: "wk-actions" }, h("button", { type: "button", class: "wk-btn", onclick: () => ctx.navigate("history", logged.id) }, "Im Verlauf ansehen")),
       );
-    } else if (info.focus === undefined && suggestion === "rest") {
-      panel.append(h("p", { class: "muted" }, "Vorschlag: Ruhetag, damit du dich erholst."));
+      return el;
     }
 
-    if (isTraining(info.focus)) {
+    const past = date < today;
+    const options = [...FOCI.map((f) => ({ id: f.id as DayFocus, label: f.label })), { id: "rest" as DayFocus, label: "Ruhetag" }];
+    el.append(
+      chipGroup(past ? "Was hast du trainiert?" : "Training", options, info.focus, (f) =>
+        void patchEntry(date, { focus: f, done: past && f !== "rest", ...(f === "rest" ? { done: false } : {}) }),
+      ),
+    );
+
+    if (isTraining(info.focus) && !info.done) {
       const reasons = conflicts(date, info.focus, focusOf());
       if (reasons.length > 0) {
-        panel.append(
-          h("p", { class: "warn" }, `Übertrainings-Risiko: ${reasons.join("; ")}.`),
-        );
-        if (suggestion && suggestion !== info.focus) {
-          panel.append(h("button", { type: "button", class: "secondary", onclick: () => void setEntry(date, suggestion) }, `Besser: ${dayLabel(suggestion)}`));
-        }
+        el.append(h("div", { class: "wk-warn" }, `Übertrainings-Risiko: ${reasons.join("; ")}.`));
       }
-      if (date === today) {
-        panel.append(
-          chips(
-            "Ort",
-            LOCATIONS.map((l) => ({ id: l.id, label: l.label })),
-            state.prefs.location,
-            (id) => (state.prefs.location = id),
-          ),
-          chips(
-            "Zeit",
-            BUDGETS.map((b) => ({ id: b as number, label: `${b} min` })),
-            state.prefs.budgetMin,
-            (id) => (state.prefs.budgetMin = id),
-          ),
+      if (date >= today) {
+        const loc = entry?.location ?? state.prefs.location;
+        const dur = entry?.budgetMin ?? state.prefs.budgetMin;
+        el.append(
           h(
-            "button",
-            { type: "button", class: "primary big", onclick: () => start(date, info.focus!) },
-            `${dayLabel(info.focus)} starten`,
+            "div",
+            { class: "wk-two" },
+            chipGroup("Ort", LOCATIONS.map((l) => ({ id: l.id as LocationId, label: l.label })), loc, (id) => {
+              state.prefs.location = id;
+              void savePrefs();
+              void patchEntry(date, { location: id });
+            }, true),
+            chipGroup("Dauer", BUDGETS.map((b) => ({ id: b as number, label: `${b} min` })), dur, (id) => {
+              state.prefs.budgetMin = id;
+              void savePrefs();
+              void patchEntry(date, { budgetMin: id });
+            }, true),
           ),
         );
+      }
+    }
+
+    if (info.done) {
+      el.append(h("div", { class: "wk-done-note" }, `Erledigt · ${dayLabel(info.focus!)}`));
+    }
+
+    const actions = h("div", { class: "wk-actions" });
+    if (sugg && sugg !== "rest") {
+      actions.append(h("button", { type: "button", class: "wk-btn primary", onclick: () => void patchEntry(date, { focus: sugg, done: false }) }, "Vorschlag übernehmen"));
+    } else if (sugg === "rest") {
+      actions.append(h("button", { type: "button", class: "wk-btn primary", onclick: () => void patchEntry(date, { focus: "rest", done: false }) }, "Vorschlag übernehmen"));
+    }
+    if (isTraining(info.focus) && !info.done) {
+      if (date === today) {
+        actions.append(h("button", { type: "button", class: "wk-btn primary", onclick: () => startTraining(date, info.focus!) }, `${dayLabel(info.focus!)} starten`));
       }
       if (date <= today) {
-        panel.append(
-          h(
-            "button",
-            { type: "button", class: "secondary wide", onclick: () => void setEntry(date, info.focus!, !info.done) },
-            info.done ? "Doch nicht gemacht" : "Ohne Details als gemacht markieren",
-          ),
-        );
+        actions.append(h("button", { type: "button", class: "wk-btn", onclick: () => void patchEntry(date, { done: true }) }, "Ohne Details als gemacht markieren"));
       }
     }
     if (info.focus !== undefined) {
-      panel.append(h("button", { type: "button", class: "link", onclick: () => void setEntry(date, null) }, "Tag leeren"));
+      actions.append(
+        info.done
+          ? h("button", { type: "button", class: "wk-btn ghost", onclick: () => void patchEntry(date, { done: false }) }, "Als offen markieren")
+          : h("button", { type: "button", class: "wk-btn ghost", onclick: () => void patchEntry(date, null) }, "Tag leeren"),
+      );
     }
-    return panel;
+    if (actions.childElementCount > 0) el.append(actions);
+    return el;
   }
 
   function draw() {
@@ -178,80 +207,93 @@ export function renderWeek(ctx: AppContext): HTMLElement {
     const start = view.start!;
     const dates = weekDates(start);
     const lookup = focusOf();
-    const suggestions = suggestWeek(start < today && today < addDays(start, 7) ? today : start, lookup, sessionsPerWeek());
+    const suggestions = suggestWeek(suggestFrom(start), lookup, target());
     const summary = weekSummary(start, lookup, (d) => dayInfo(d, state.sessions, state.week).done);
-    const target = sessionsPerWeek();
+    const goal = target();
 
-    const firstRun = state.sessions.length === 0 && Object.keys(state.week).length === 0;
     root.append(
-      h("h1", {}, state.profile.name ? `Hallo ${state.profile.name}` : "Wochenplan"),
       h(
         "div",
-        { class: "week-nav" },
-        h("button", { type: "button", class: "bar-btn", "aria-label": "Vorherige Woche", onclick: () => { view.start = addDays(start, -7); draw(); } }, "‹"),
-        h("div", { class: "week-title" }, h("strong", {}, `KW ${isoWeek(start)}`), h("span", { class: "muted" }, `${fmtShortDate(start)} – ${fmtShortDate(addDays(start, 6))}`)),
-        h("button", { type: "button", class: "bar-btn", "aria-label": "Nächste Woche", onclick: () => { view.start = addDays(start, 7); draw(); } }, "›"),
+        { class: "wk-head" },
+        h(
+          "div",
+          {},
+          h("div", { class: "wk-kicker" }, `KW ${isoWeek(start)} · ${fmtShortDate(start)} – ${fmtShortDate(addDays(start, 6))}`),
+          h("h1", { class: "wk-h1" }, "Wochenplan"),
+        ),
+        h(
+          "div",
+          { class: "wk-arrows" },
+          h("button", { type: "button", class: "wk-icon", "aria-label": "Vorherige Woche", innerHTML: ICON(CHEVRON_LEFT), onclick: () => { view.start = addDays(start, -7); draw(); } }),
+          h("button", { type: "button", class: "wk-icon", "aria-label": "Nächste Woche", innerHTML: ICON(CHEVRON_RIGHT), onclick: () => { view.start = addDays(start, 7); draw(); } }),
+        ),
       ),
     );
-    if (firstRun) {
-      root.append(
-        h(
-            "div",
-            { class: "card hint" },
-            h("strong", {}, "Los geht's: "),
-            "Tippe einen Tag an und wähle, was du trainierst oder trainiert hast. Mit «Woche automatisch planen» verteilt die App die restlichen Tage so, dass jede Einheit auf die vorherige aufbaut und genug Erholung bleibt. Am Trainingstag erstellt die App aus dem Fokus die Einheit.",
-        ),
-      );
-    }
 
-    const list = h("div", { class: "week-list" });
+    const grid = h("div", { class: "wk-grid" });
     dates.forEach((date, i) => {
       const info = dayInfo(date, state.sessions, state.week);
       const sugg = info.focus === undefined && date >= today ? suggestions[date] : undefined;
-      const warn = isTraining(info.focus) && !info.done && conflicts(date, info.focus, lookup).length > 0;
-      const text = info.focus !== undefined ? dayLabel(info.focus) : sugg ? `Vorschlag: ${dayLabel(sugg)}` : "Frei";
+      const shown = info.focus ?? sugg;
+      const empty = info.focus === undefined;
+      const entry = state.week[date];
+      const logged = state.sessions.find((s) => s.date === date);
+      const minutes = logged ? logged.durationMin : entry?.budgetMin ?? state.prefs.budgetMin;
       const selected = view.selected === date;
-      const row = h(
-        "button",
-        {
-          type: "button",
-          class: `day${selected ? " selected" : ""}${date === today ? " today" : ""}${info.done ? " done" : ""}${info.focus === undefined ? " empty" : ""}`,
-          "aria-pressed": String(selected),
-          onclick: () => {
-            view.selected = date;
-            draw();
+      const warn = isTraining(info.focus) && !info.done && conflicts(date, info.focus, lookup).length > 0;
+      grid.append(
+        h(
+          "button",
+          {
+            type: "button",
+            class: "wk-col",
+            "aria-pressed": String(selected),
+            "aria-label": `${WEEKDAYS_FULL[i]} ${parseDate(date).getDate()}.${shown ? ` ${dayLabel(shown)}` : ""}${info.done ? ", erledigt" : ""}`,
+            onclick: () => {
+              view.selected = date;
+              draw();
+            },
           },
-        },
-        h("span", { class: "day-name" }, h("strong", {}, WEEKDAYS[i]), h("span", { class: "muted small" }, fmtShortDate(date))),
-        h("span", { class: "day-focus" }, text),
-        h("span", { class: "day-mark", "aria-label": info.done ? "erledigt" : warn ? "Warnung" : "" }, info.done ? "✓" : warn ? "⚠" : ""),
+          h("span", { class: "wk-wd" }, WEEKDAYS[i]),
+          h("span", { class: `wk-date${date === today ? " today" : ""}` }, String(parseDate(date).getDate())),
+          h(
+            "span",
+            { class: `wk-tile${selected ? " selected" : ""}${info.done ? " done" : ""}${empty ? " dashed" : ""}${shown === "rest" ? " rest" : ""}` },
+            h("span", { class: "wk-abbr" }, shown ? ABBR[shown] : "+"),
+            h("span", { class: "wk-dur" }, isTraining(shown) ? `${minutes}′` : ""),
+            h("span", { class: "wk-mark", innerHTML: info.done ? ICON(CHECK, 16, 1.75) : warn ? "⚠" : "" }),
+          ),
+        ),
       );
-      list.append(row);
-      if (selected) list.append(dayPanel(date));
     });
-    root.append(list);
+    root.append(grid);
 
     root.append(
       h(
-        "p",
-        { class: "muted" },
-        `${summary.done} von ${summary.sessions} geplanten Einheiten erledigt · Ziel ${target} pro Woche`,
+        "div",
+        { class: "wk-progress" },
+        h("div", { class: "wk-ticks" }, ...Array.from({ length: goal }, (_, j) => h("span", { class: `wk-tick${j < summary.done ? " on" : ""}` }))),
+        h("span", { class: "wk-small" }, `${summary.done} von ${summary.sessions} erledigt · Ziel ${goal}`),
       ),
-      h("button", { type: "button", class: "primary big", onclick: () => void planWeek() }, "Woche automatisch planen"),
-      chips(
-        "Einheiten pro Woche",
-        Array.from({ length: MAX_WEEK_SESSIONS - MIN_WEEK_SESSIONS + 1 }, (_, i) => ({
-          id: MIN_WEEK_SESSIONS + i,
-          label: String(MIN_WEEK_SESSIONS + i),
-        })),
-        target,
-        (n) => {
-          state.prefs.sessionsPerWeek = n;
-          void savePrefs();
-          draw();
-        },
+      h("hr", { class: "wk-hr" }),
+      detail(view.selected!, suggestions[view.selected!]),
+      h("hr", { class: "wk-hr" }),
+      h(
+        "div",
+        { class: "wk-detail" },
+        h("button", { type: "button", class: "wk-btn", onclick: () => void planWeek() }, "Woche automatisch planen"),
+        chipGroup(
+          "Einheiten pro Woche",
+          Array.from({ length: MAX_WEEK_SESSIONS - MIN_WEEK_SESSIONS + 1 }, (_, i) => ({ id: MIN_WEEK_SESSIONS + i, label: String(MIN_WEEK_SESSIONS + i) })),
+          goal,
+          (n) => {
+            state.prefs.sessionsPerWeek = n;
+            void savePrefs();
+            draw();
+          },
+          true,
+        ),
       ),
-      h("p", { class: "muted small" }, `Ort: ${locationLabel(state.prefs.location)} · ${state.prefs.budgetMin} min (am Trainingstag änderbar)`),
     );
   }
 
