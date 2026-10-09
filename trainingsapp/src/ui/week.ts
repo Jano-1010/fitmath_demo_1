@@ -288,7 +288,10 @@ export function renderWeek(ctx: AppContext): HTMLElement {
         "div",
         { class: "wk-detail" },
         h("button", { type: "button", class: "wk-btn", onclick: () => void planWeek() }, "Woche automatisch planen"),
-        chipGroup(
+        h(
+          "div",
+          { class: "wk-row" },
+          chipGroup(
           "Einheiten pro Woche",
           Array.from({ length: MAX_WEEK_SESSIONS - MIN_WEEK_SESSIONS + 1 }, (_, i) => ({ id: MIN_WEEK_SESSIONS + i, label: String(MIN_WEEK_SESSIONS + i) })),
           goal,
@@ -299,8 +302,28 @@ export function renderWeek(ctx: AppContext): HTMLElement {
           },
           true,
         ),
+          h("button", { type: "button", class: "wk-btn danger", onclick: () => void resetWeek() }, "Zurücksetzen"),
+        ),
       ),
     );
+  }
+
+  async function resetWeek() {
+    const start = view.start!;
+    const dates = weekDates(start);
+    const hasPlan = dates.some((d) => state.week[d]);
+    const logged = dates.filter((d) => state.sessions.some((s) => s.date === d)).length;
+    if (!hasPlan) {
+      ctx.toast(logged > 0 ? "Nichts zurückzusetzen. Gespeicherte Einheiten bleiben im Verlauf." : "Diese Woche ist schon leer.");
+      return;
+    }
+    const note = logged > 0 ? " Gespeicherte Einheiten bleiben im Verlauf." : "";
+    if (!confirm(`Wochenplan KW ${isoWeek(start)} zurücksetzen? Alle geplanten und markierten Tage werden geleert.${note}`)) return;
+    for (const d of dates) delete state.week[d];
+    await ctx.saveWeek();
+    view.selected = suggestFrom(start);
+    ctx.toast("Woche zurückgesetzt. Freie Tage zeigen wieder Vorschläge.");
+    draw();
   }
 
   draw();
