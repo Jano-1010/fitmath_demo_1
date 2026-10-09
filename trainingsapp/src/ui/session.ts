@@ -209,6 +209,11 @@ export function renderSession(ctx: AppContext, draft: Draft): HTMLElement {
     await ctx.reloadSessions();
     ctx.state.draft = null;
     await ctx.storage.setMeta("draft", null);
+    const entry = ctx.state.week[session.date];
+    if (entry && entry.focus !== "rest") {
+      delete ctx.state.week[session.date];
+      await ctx.saveWeek();
+    }
     ctx.toast("Einheit gespeichert.");
     ctx.navigate("history", session.id);
   };

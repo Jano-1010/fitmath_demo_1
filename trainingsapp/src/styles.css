@@ -224,3 +224,24 @@ button.tile { cursor: pointer; }
 .lock-input { width: 100%; letter-spacing: .4em; }
 .lock-msg { color: var(--danger); font-weight: 600; min-height: 1.2em; margin: 0; }
 .card .primary { margin-top: 8px; }
+
+/* Wochenplan */
+.week-nav { display: grid; grid-template-columns: var(--tap) 1fr var(--tap); align-items: center; margin: 8px 0; }
+.week-nav .bar-btn { font-size: 1.8rem; }
+.week-title { display: flex; flex-direction: column; align-items: center; }
+.week-list { display: flex; flex-direction: column; gap: 6px; }
+.day {
+  display: grid; grid-template-columns: 4rem minmax(0, 1fr) 1.5rem; gap: 8px; align-items: center; min-height: 56px; text-align: left;
+  background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 4px 12px;
+}
+.day-name { display: flex; flex-direction: column; line-height: 1.2; }
+.day-focus { font-weight: 600; }
+.day.empty .day-focus { color: var(--muted); font-weight: 400; }
+.day.today { border-color: var(--accent); }
+.day.selected { background: var(--surface-2); }
+.day.done { border-color: var(--ok); }
+.day-mark { text-align: center; font-weight: 800; color: var(--ok); }
+.day-mark:not(:empty) { font-size: 1.1rem; }
+.warn { color: var(--danger); font-weight: 600; }
+.day-panel .group { margin-top: 0; }
+.day-panel .group + .group { margin-top: 12px; }

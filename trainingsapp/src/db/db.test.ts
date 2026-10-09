@@ -30,7 +30,7 @@ describe("idb storage", () => {
 
 describe("backup", () => {
   it("exports and re-imports", () => {
-    const text = JSON.stringify(makeBackup([session], undefined));
+    const text = JSON.stringify(makeBackup([session], undefined, undefined));
     expect(parseBackup(text).sessions).toEqual([session]);
   });
   it("rejects foreign or broken files", () => {

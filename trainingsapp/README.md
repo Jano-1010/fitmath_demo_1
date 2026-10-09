@@ -1,6 +1,6 @@
 # Trainings-App
 
-Persönliche Trainings-App (Hyrox, ATHX). Spezifikation: `docs/spec.md`. Stand: **Stufe 1**.
+Persönliche Trainings-App (Hyrox, ATHX). Spezifikation: `docs/spec.md`. Stand: Wochenplan als Startseite.
 
 ## Befehle
 
@@ -13,6 +13,10 @@ npm run preview    # Build lokal ansehen
 ```
 
 Als PWA installieren braucht HTTPS (oder localhost). Den Ordner `dist/` auf einen beliebigen statischen HTTPS-Host legen.
+
+## Wochenplan
+
+Startseite ist der Wochenplan (Mo bis So). Pro Tag Fokus oder Ruhetag wählen, vergangene Tage als gemacht markieren. `src/domain/week.ts` schlägt die freien Tage vor: Erholung pro Bereich (Oberkörper, Beine, Ausdauer), maximal 3 Trainingstage in Folge, maximal 5 Einheiten pro Woche, Wochenmix je nach Ziel (3 bis 6 Einheiten). Am Trainingstag erstellt der Plangenerator die Einheit aus Fokus, Ort und Zeit.
 
 ## Aufbau
 
