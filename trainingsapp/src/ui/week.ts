@@ -37,6 +37,12 @@ const CHECK = '<path d="M20 6 9 17l-5-5"></path>';
 /** Remembered while the app is open. */
 const view: { start?: string; selected?: string } = {};
 
+/** Jumps back to the current week with today selected. */
+export function resetWeekView(): void {
+  view.start = undefined;
+  view.selected = undefined;
+}
+
 function chipGroup<T extends string | number>(
   label: string,
   options: { id: T; label: string }[],
