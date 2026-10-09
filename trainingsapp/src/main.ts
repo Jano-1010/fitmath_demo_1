@@ -17,6 +17,7 @@ import { showLock } from "./ui/lock";
 import type { Profile } from "./domain/auth";
 
 const DEFAULT_PREFS: Prefs = { location: "gym_full", budgetMin: 60, sessionsPerWeek: 4 };
+const APP_NAME = "Ascend";
 const TABS: { id: Tab; label: string }[] = [
   { id: "training", label: "Woche" },
   { id: "history", label: "Verlauf" },
@@ -77,15 +78,6 @@ async function start() {
     ...TABS.map((t) => h("button", { type: "button", "data-tab": t.id, onclick: () => ctx.navigate(t.id) }, t.label)),
   );
 
-  const homeBtn = h("button", {
-    type: "button",
-    class: "bar-btn",
-    "aria-label": "Startseite",
-    onclick: () => ctx.navigate("training"),
-    innerHTML:
-      '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-6h4v6"/></svg>',
-  });
-
   const menu = h(
     "div",
     { class: "menu", id: "main-menu", hidden: true },
@@ -118,7 +110,7 @@ async function start() {
     if (e.key === "Escape") setMenu(false);
   });
 
-  const topbar = h("header", { class: "topbar" }, menuBtn, nav, homeBtn, menu);
+  const topbar = h("header", { class: "topbar" }, menuBtn, h("div", { class: "app-title" }, APP_NAME), h("span"), menu);
 
   function render() {
     clear(view);
@@ -138,7 +130,7 @@ async function start() {
 
   window.addEventListener("pagehide", () => persistDraft.flush());
 
-  root.append(topbar, view, toastEl);
+  root.append(topbar, view, nav, toastEl);
   render();
   registerSW({ immediate: true });
 }

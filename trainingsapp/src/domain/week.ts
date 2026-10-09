@@ -1,5 +1,5 @@
 import { localDate } from "./format";
-import type { FocusId, Session } from "./types";
+import type { FocusId, LocationId, Session } from "./types";
 
 /** What a day holds in the weekly plan. "rest" is an explicit rest day. */
 export type DayFocus = FocusId | "rest";
@@ -8,6 +8,9 @@ export interface DayEntry {
   focus: DayFocus;
   /** Trained without logging details (or confirmed afterwards). */
   done: boolean;
+  /** Where and how long this day is planned. Falls back to the app defaults. */
+  location?: LocationId;
+  budgetMin?: number;
 }
 
 /** Keyed by YYYY-MM-DD. */
