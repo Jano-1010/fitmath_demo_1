@@ -230,6 +230,7 @@ export function renderWeek(ctx: AppContext): HTMLElement {
         h(
           "div",
           { class: "wk-arrows" },
+          h("button", { type: "button", class: "wk-today", onclick: () => { view.start = weekStart(today); view.selected = today; draw(); } }, "Heute"),
           h("button", { type: "button", class: "wk-icon", "aria-label": "Vorherige Woche", innerHTML: ICON(CHEVRON_LEFT), onclick: () => { view.start = addDays(start, -7); draw(); } }),
           h("button", { type: "button", class: "wk-icon", "aria-label": "Nächste Woche", innerHTML: ICON(CHEVRON_RIGHT), onclick: () => { view.start = addDays(start, 7); draw(); } }),
         ),
